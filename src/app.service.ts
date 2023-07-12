@@ -22,7 +22,7 @@ export class AppService {
     });
 
     if (cacheData) {
-      return cacheData;
+      return cacheData.data;
     }
 
     const data = await this.blockModel.aggregate([
@@ -36,6 +36,9 @@ export class AppService {
       },
       {
         $unwind: '$listings',
+      },
+      {
+        $match: {},
       },
       {
         $group: {
