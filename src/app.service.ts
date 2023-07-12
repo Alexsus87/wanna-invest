@@ -42,6 +42,8 @@ export class AppService {
           _id: {
             city: '$listings.address.city',
           },
+          lat: { $first: '$listings.address.lat' },
+          lng: { $first: '$listings.address.lng' },
           count: { $sum: 1 },
         },
       },
