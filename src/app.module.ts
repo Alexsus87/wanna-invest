@@ -7,9 +7,7 @@ import { Block, BlockSchema } from './schema/block.schema';
 import { Listing, ListingSchema } from './schema/listing.schema';
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb://username:password@host:port/database?options...',
-    ),
+    MongooseModule.forRoot(process.env.MONGO_CONNECTION_STRING),
     MongooseModule.forFeature([
       { name: Block.name, schema: BlockSchema },
       { name: Listing.name, schema: ListingSchema },
