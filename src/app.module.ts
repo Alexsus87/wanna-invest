@@ -7,6 +7,7 @@ import { Block, BlockSchema } from './schema/block.schema';
 import { Listing, ListingSchema } from './schema/listing.schema';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
+import { Cache, CacheSchema } from './schema/cache.schema';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import * as Joi from 'joi';
     MongooseModule.forFeature([
       { name: Block.name, schema: BlockSchema },
       { name: Listing.name, schema: ListingSchema },
+      { name: Cache.name, schema: CacheSchema },
     ]),
   ],
   controllers: [AppController],
