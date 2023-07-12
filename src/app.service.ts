@@ -14,6 +14,9 @@ export interface Filter {
   year?: number;
   groupBy?: string;
   country?: string;
+  interestRate?: number;
+  mortgageYears?: number;
+  investmentAmount?: number;
 }
 
 @Injectable()
@@ -32,6 +35,12 @@ export class AppService {
   ) {}
 
   async getData(filter: Filter) {
+    const mortgageData = {
+      years: filter.mortgageYears,
+      interestRate: filter.interestRate,
+      downPayment: filter.investmentAmount,
+    };
+
     const cacheData = await this.cacheModel.findOne({
       type: 'bookingsByFilter',
       filter,
@@ -41,7 +50,7 @@ export class AppService {
       return cacheData.data;
     }*/
 
-    let data = await this.blockModel.aggregate([
+    const data = await this.blockModel.aggregate([
       {
         $lookup: {
           from: 'listings',
@@ -73,6 +82,7 @@ export class AppService {
       },
     ]);
 
+
     if (filter.country === 'United States' && filter.groupBy === 'city') {
       const properties = (
         await this.blockModel.aggregate([
@@ -87,37 +97,36 @@ export class AppService {
       ).reduce((map, row) => {
         return map.set(row._id, Math.round(row.sum / row.count));
       }, new Map());
-
-      data = data.map((row) => {
-        const averagePropertyPriceForCity = properties.get(row._id);
-
-        if (averagePropertyPriceForCity) {
-          row.capRate = this.roiService.calculateCapRate(
-            row.sum,
-            averagePropertyPriceForCity,
-          );
-          row.cashOnCash = this.roiService.cashOnCashReturn(
-            row.sum,
-            averagePropertyPriceForCity,
-          );
-          row.cashFlow = this.roiService.calculateCashFlow(
-            row.sum,
-            averagePropertyPriceForCity,
-          );
-          row.payback = averagePropertyPriceForCity / row.sum;
-        }
-
-        return row;
-      });
     }
+    const mappedData = data.map((i) => {
+      //get property cost by city here
+      const averagePropertyCost = properties.get(row._id) || 400000;
+      const completeMortgageData = {
+        propertyCost: averagePropertyCost,
+        ...mortgageData,
+      };
+
+      const isValidMortgageData =
+        this.roiService.isValidMortgageData(completeMortgageData);
+      i.cashFlow = this.roiService.calculateCashFlow(
+        i.sum,
+        isValidMortgageData ? completeMortgageData : undefined,
+      );
+      i.capRate = this.roiService.calculateCapRate(i.sum, averagePropertyCost);
+      i.cashOnCash = isValidMortgageData
+        ? this.roiService.calculateCashOnCashReturn(i.sum, completeMortgageData)
+        : undefined;
+
+      return i;
+    });
 
     await this.cacheModel.create({
       _id: new mongoose.Types.ObjectId(),
       type: 'bookingsByFilter',
       filter,
-      data: data,
+      data: mappedData,
     });
 
-    return data;
+    return mappedData.filter((item) => item._id !== null);
   }
 }
