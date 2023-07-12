@@ -5,6 +5,12 @@ import { Block, BlockDocument } from './schema/block.schema';
 import { Listing, ListingDocument } from './schema/listing.schema';
 import { Cache, CacheDocument } from './schema/cache.schema';
 
+export interface Filter {
+  year?: number;
+  groupBy?: string;
+  country?: string;
+}
+
 @Injectable()
 export class AppService {
   constructor(
@@ -16,9 +22,10 @@ export class AppService {
     protected readonly cacheModel: Model<CacheDocument>,
   ) {}
 
-  async getData() {
+  async getData(filter: Filter) {
     const cacheData = await this.cacheModel.findOne({
-      type: 'bookingsCountByCity',
+      type: 'bookingsByFilter',
+      filter,
     });
 
     if (cacheData) {
@@ -38,23 +45,29 @@ export class AppService {
         $unwind: '$listings',
       },
       {
-        $match: {},
+        $match: {
+          ...(filter.country
+            ? { 'listings.address.country': filter.country }
+            : {}),
+          startDate: { $gte: new Date(filter.year, 0, 1) },
+          endDate: { $lte: new Date(filter.year, 11, 31) },
+        },
       },
       {
         $group: {
-          _id: {
-            city: '$listings.address.city',
-          },
+          _id: `$listings.address.${filter.groupBy}`,
           lat: { $first: '$listings.address.lat' },
           lng: { $first: '$listings.address.lng' },
-          count: { $sum: 1 },
+          count: { $count: {} },
+          sum: { $sum: '$reservation.money.hostPayout' },
         },
       },
     ]);
 
     await this.cacheModel.create({
       _id: new mongoose.Types.ObjectId(),
-      type: 'bookingsCountByCity',
+      type: 'bookingsByFilter',
+      filter,
       data: data,
     });
 

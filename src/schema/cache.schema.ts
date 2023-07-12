@@ -13,6 +13,9 @@ export class Cache {
   type: string;
 
   @Prop({ type: Object })
+  filter: object;
+
+  @Prop({ type: Object })
   data: object;
 }
 
