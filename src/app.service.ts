@@ -50,7 +50,7 @@ export class AppService {
       return cacheData.data;
     }*/
 
-    const data = await this.blockModel.aggregate([
+    let data = await this.blockModel.aggregate([
       {
         $lookup: {
           from: 'listings',
@@ -73,7 +73,12 @@ export class AppService {
       },
       {
         $group: {
-          _id: `$listings.address.${filter.groupBy}`,
+          _id: {
+            city: `$listings.address.city`,
+            //listingId: `$listingId`,
+          },
+          city: { $first: '$listings.address.city' },
+          country: { $first: '$listings.address.country' },
           lat: { $first: '$listings.address.lat' },
           lng: { $first: '$listings.address.lng' },
           count: { $count: {} },
@@ -81,7 +86,6 @@ export class AppService {
         },
       },
     ]);
-
 
     if (filter.country === 'United States' && filter.groupBy === 'city') {
       const properties = (
@@ -97,36 +101,43 @@ export class AppService {
       ).reduce((map, row) => {
         return map.set(row._id, Math.round(row.sum / row.count));
       }, new Map());
+
+      data = data.map((i) => {
+        //get property cost by city here
+        const averagePropertyCost = properties.get(i._id) || 400000;
+        const completeMortgageData = {
+          propertyCost: averagePropertyCost,
+          ...mortgageData,
+        };
+
+        const isValidMortgageData =
+          this.roiService.isValidMortgageData(completeMortgageData);
+        i.cashFlow = this.roiService.calculateCashFlow(
+          i.sum,
+          isValidMortgageData ? completeMortgageData : undefined,
+        );
+        i.capRate = this.roiService.calculateCapRate(
+          i.sum,
+          averagePropertyCost,
+        );
+        i.cashOnCash = isValidMortgageData
+          ? this.roiService.calculateCashOnCashReturn(
+              i.sum,
+              completeMortgageData,
+            )
+          : undefined;
+
+        return i;
+      });
     }
-    const mappedData = data.map((i) => {
-      //get property cost by city here
-      const averagePropertyCost = properties.get(row._id) || 400000;
-      const completeMortgageData = {
-        propertyCost: averagePropertyCost,
-        ...mortgageData,
-      };
-
-      const isValidMortgageData =
-        this.roiService.isValidMortgageData(completeMortgageData);
-      i.cashFlow = this.roiService.calculateCashFlow(
-        i.sum,
-        isValidMortgageData ? completeMortgageData : undefined,
-      );
-      i.capRate = this.roiService.calculateCapRate(i.sum, averagePropertyCost);
-      i.cashOnCash = isValidMortgageData
-        ? this.roiService.calculateCashOnCashReturn(i.sum, completeMortgageData)
-        : undefined;
-
-      return i;
-    });
 
     await this.cacheModel.create({
       _id: new mongoose.Types.ObjectId(),
       type: 'bookingsByFilter',
       filter,
-      data: mappedData,
+      data,
     });
 
-    return mappedData.filter((item) => item._id !== null);
+    return data.filter((item) => item._id !== null);
   }
 }
