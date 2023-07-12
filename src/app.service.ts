@@ -4,11 +4,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Block, BlockDocument } from './schema/block.schema';
 import { Listing, ListingDocument } from './schema/listing.schema';
 import { Cache, CacheDocument } from './schema/cache.schema';
+import { RoiService } from './roi.service';
 
 export interface Filter {
   year?: number;
   groupBy?: string;
   country?: string;
+  interestRate?: number;
+  mortgageYears?: number;
+  investmentAmount?: number;
 }
 
 @Injectable()
@@ -20,16 +24,23 @@ export class AppService {
     protected readonly blockModel: Model<BlockDocument>,
     @InjectModel(Cache.name)
     protected readonly cacheModel: Model<CacheDocument>,
+    private readonly roiService: RoiService,
   ) {}
 
   async getData(filter: Filter) {
+    const mortgageData = {
+      years: filter.mortgageYears,
+      interestRate: filter.interestRate,
+      downPayment: filter.investmentAmount,
+    };
+
     const cacheData = await this.cacheModel.findOne({
       type: 'bookingsByFilter',
       filter,
     });
 
     if (cacheData) {
-      return cacheData.data;
+      //return cacheData.data;
     }
 
     const data = await this.blockModel.aggregate([
@@ -63,14 +74,39 @@ export class AppService {
         },
       },
     ]);
+    const mappedData = data.map((i) => {
+      //get property cost by city here
+      const averagePropertyCost = 400000;
+      const completeMortgageData = {
+        propertyCost: averagePropertyCost,
+        ...mortgageData,
+      };
+
+      const isValidMortgageData =
+        this.roiService.isValidMortgageData(completeMortgageData);
+      console.log('completeMortgageData');
+      console.log(completeMortgageData);
+      console.log('isValidMortgageData');
+      console.log(isValidMortgageData);
+      i.cashFlow = this.roiService.calculateCashFlow(
+        i.sum,
+        isValidMortgageData ? completeMortgageData : undefined,
+      );
+      i.capRate = this.roiService.calculateCapRate(i.sum, averagePropertyCost);
+      i.cashOnCash = isValidMortgageData
+        ? this.roiService.calculateCashOnCashReturn(i.sum, completeMortgageData)
+        : undefined;
+
+      return i;
+    });
 
     await this.cacheModel.create({
       _id: new mongoose.Types.ObjectId(),
       type: 'bookingsByFilter',
       filter,
-      data: data,
+      data: mappedData,
     });
 
-    return data;
+    return mappedData;
   }
 }
