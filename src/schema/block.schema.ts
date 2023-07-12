@@ -1,6 +1,22 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+@Schema({ _id: false })
+class Money {
+  @Prop()
+  hostPayout: number;
+}
+
+const MoneySchema = SchemaFactory.createForClass(Money);
+
+@Schema({ _id: false })
+class Reservation {
+  @Prop({ type: MoneySchema })
+  money: Money;
+}
+
+const ReservationSchema = SchemaFactory.createForClass(Reservation);
+
 @Schema({
   collection: 'blocks',
   autoIndex: true,
@@ -20,8 +36,12 @@ export class Block {
   endDate: Date;
   @Prop()
   type: string;
+
   @Prop({ type: Types.ObjectId })
   reservationId: Types.ObjectId;
+
+  @Prop({ type: ReservationSchema })
+  reservation: Reservation;
 }
 
 export const BlockSchema = SchemaFactory.createForClass(Block);

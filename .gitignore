@@ -39,5 +39,7 @@ lerna-debug.log*
 
 # state
 src/cmd/offset-blocks.txt
+src/cmd/offset-blocks.json
+src/cmd/offset-listings.json
 src/cmd/offset.txt
 src/cmd/realtor-data.json

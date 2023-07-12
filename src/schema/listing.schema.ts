@@ -27,6 +27,7 @@ export class Address {
   @Prop()
   city: string;
 }
+
 export const AddressSchema = SchemaFactory.createForClass(Address);
 
 @Schema({ _id: false })
@@ -37,9 +38,10 @@ class Prices {
   @Prop()
   currency: string;
 }
+
 const PricesSchema = SchemaFactory.createForClass(Prices);
 
-@Schema({ autoIndex: true })
+@Schema({ autoIndex: true, collection: 'listings_v2' })
 export class Listing {
   @Prop({ type: Types.ObjectId })
   _id: Types.ObjectId;

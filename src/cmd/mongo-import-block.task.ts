@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import * as fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import * as process from 'process';
@@ -18,46 +18,77 @@ export class MongoImportBlockTask {
     );
 
     const prodBlocksModel = prodConnection.model('blocks', BlockSchema);
-    const devBlocksModel = devConnection.model('blocks', BlockSchema);
+    const devBlocksModel = devConnection.model(
+      'blocks_v2',
+      BlockSchema,
+      'blocks_v2',
+    );
 
     const offsetFile = fs.readFileSync(
-      __dirname + '/offset-blocks.txt',
+      __dirname + '/offset-blocks.json',
       'utf8',
     );
-    let offset = parseInt(offsetFile, 10);
+    let { lastId, page } = JSON.parse(offsetFile);
 
-    console.log('loaded offset from file', offset);
+    console.log(`loaded offset from file lastId: ${lastId}, page: ${page}`);
 
     const limit = 1000;
 
     let shouldContinue = true;
 
     while (shouldContinue) {
-      const data = await prodBlocksModel.find(
-        {},
-        {},
-        { limit: 1000, skip: offset },
-      );
-      console.log(`received data offset ${offset}, size: ${data.length}`);
+      console.time('dbsave');
 
-      if (data.length < 1000) {
+      const data = await prodBlocksModel.find(
+        {
+          ...(lastId
+            ? { _id: { $gt: new mongoose.Types.ObjectId(lastId) } }
+            : {}),
+        },
+        {},
+        { limit, sort: { _id: 1 } },
+      );
+      console.log(
+        `received data lastId ${lastId}, page: ${page}, size: ${data.length}`,
+      );
+
+      if (data.length < limit) {
         shouldContinue = false;
       }
 
-      console.log(`saving data, offset ${offset}, size: ${data.length}`);
+      console.log(
+        `saving data, lastId ${lastId}, page: ${page}, size: ${data.length}`,
+      );
 
       try {
-        await devBlocksModel.insertMany(data, { ordered: false });
+        const filtered = data.filter(
+          (item) => !!item.reservation?.money?.hostPayout,
+        );
 
-        console.log(`saved data, offset ${offset}, size: ${data.length}`);
+        console.log(`skipped count ${data.length - filtered.length}`);
+
+        await devBlocksModel.insertMany(filtered, { ordered: false });
+
+        console.log(
+          `saved data, offset lastId ${lastId}, page: ${page}, size: ${data.length}`,
+        );
       } catch (error) {
         console.log(
           `error saving data, error count: ${error.writeErrors.length}, inserted count: ${error.insertedDocs.length}, message: ${error.message}`,
         );
       }
 
-      offset += 1000;
-      fs.writeFileSync(__dirname + '/offset-blocks.txt', offset.toString());
+      lastId = data[data.length - 1]._id;
+      page++;
+
+      console.log('new lastId', lastId);
+
+      fs.writeFileSync(
+        __dirname + '/offset-blocks.json',
+        JSON.stringify({ lastId, page }),
+      );
+
+      console.timeEnd('dbsave');
     }
 
     console.log(`task finished`);
