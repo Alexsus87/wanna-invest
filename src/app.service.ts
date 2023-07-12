@@ -40,7 +40,7 @@ export class AppService {
     });
 
     if (cacheData) {
-      //return cacheData.data;
+      return cacheData.data;
     }
 
     const data = await this.blockModel.aggregate([
