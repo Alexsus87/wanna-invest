@@ -71,6 +71,6 @@ export class AppService {
       data: data,
     });
 
-    return data;
+    return data.filter((item) => item._id !== null);
   }
 }
