@@ -73,12 +73,7 @@ export class AppService {
       },
       {
         $group: {
-          _id: {
-            city: `$listings.address.city`,
-            //listingId: `$listingId`,
-          },
-          city: { $first: '$listings.address.city' },
-          country: { $first: '$listings.address.country' },
+          _id: `$listings.address.${filter.groupBy}`,
           lat: { $first: '$listings.address.lat' },
           lng: { $first: '$listings.address.lng' },
           count: { $count: {} },
