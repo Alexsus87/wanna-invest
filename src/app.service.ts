@@ -69,8 +69,14 @@ export class AppService {
           _id: `$listings.address.${filter.groupBy}`,
           lat: { $first: '$listings.address.lat' },
           lng: { $first: '$listings.address.lng' },
-          count: { $count: {} },
+          count: { $sum: 1 },
           sum: { $sum: '$reservation.money.hostPayout' },
+          totalListings: { $addToSet: '$listings._id' }, // Collect unique listing IDs
+        },
+      },
+      {
+        $addFields: {
+          totalListingsCount: { $size: '$totalListings' }, // Calculate count of unique listing IDs
         },
       },
     ]);
@@ -93,7 +99,9 @@ export class AppService {
         ? this.roiService.calculateCashOnCashReturn(i.sum, completeMortgageData)
         : undefined;
 
-      return i;
+      const { totalListings, ...rest } = i;
+
+      return rest;
     });
 
     await this.cacheModel.create({
