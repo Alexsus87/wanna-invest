@@ -14,6 +14,8 @@ import * as Joi from 'joi';
 import { Cache, CacheSchema } from './schema/cache.schema';
 import { RoiService } from './roi.service';
 import { CsvimportTask } from './cmd/csvimport.task';
+import { MongoImportTask } from './cmd/mongo-import.task';
+import { MongoImportBlockTask } from './cmd/mongo-import-block.task';
 
 @Module({
   imports: [
@@ -31,6 +33,12 @@ import { CsvimportTask } from './cmd/csvimport.task';
     ]),
   ],
   controllers: [AppController],
-  providers: [AppService, RoiService, CsvimportTask],
+  providers: [
+    AppService,
+    RoiService,
+    CsvimportTask,
+    MongoImportTask,
+    MongoImportBlockTask,
+  ],
 })
 export class AppModule {}

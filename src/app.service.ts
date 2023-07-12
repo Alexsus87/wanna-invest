@@ -84,10 +84,6 @@ export class AppService {
 
       const isValidMortgageData =
         this.roiService.isValidMortgageData(completeMortgageData);
-      console.log('completeMortgageData');
-      console.log(completeMortgageData);
-      console.log('isValidMortgageData');
-      console.log(isValidMortgageData);
       i.cashFlow = this.roiService.calculateCashFlow(
         i.sum,
         isValidMortgageData ? completeMortgageData : undefined,
@@ -107,6 +103,6 @@ export class AppService {
       data: mappedData,
     });
 
-    return mappedData;
+    return mappedData.filter((item) => item._id !== null);
   }
 }
