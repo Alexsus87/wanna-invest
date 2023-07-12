@@ -46,9 +46,9 @@ export class AppService {
       filter,
     });
 
-    /*if (cacheData) {
+    if (cacheData) {
       return cacheData.data;
-    }*/
+    }
 
     let data = await this.blockModel.aggregate([
       {
