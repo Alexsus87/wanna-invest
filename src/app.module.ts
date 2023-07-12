@@ -8,6 +8,7 @@ import { Listing, ListingSchema } from './schema/listing.schema';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { Cache, CacheSchema } from './schema/cache.schema';
+import { RoiService } from './roi.service';
 
 @Module({
   imports: [
@@ -24,6 +25,6 @@ import { Cache, CacheSchema } from './schema/cache.schema';
     ]),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, RoiService],
 })
 export class AppModule {}
