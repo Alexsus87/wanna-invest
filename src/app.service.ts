@@ -4,6 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Block, BlockDocument } from './schema/block.schema';
 import { Listing, ListingDocument } from './schema/listing.schema';
 import { Cache, CacheDocument } from './schema/cache.schema';
+import {
+  PropertiesData,
+  PropertiesDataDocument,
+} from './schema/properties-data.schema';
 import { RoiService } from './roi.service';
 
 export interface Filter {
@@ -22,9 +26,12 @@ export class AppService {
     protected readonly listingModel: Model<ListingDocument>,
     @InjectModel(Block.name)
     protected readonly blockModel: Model<BlockDocument>,
+    @InjectModel(PropertiesData.name)
+    protected readonly propertyModel: Model<PropertiesDataDocument>,
     @InjectModel(Cache.name)
     protected readonly cacheModel: Model<CacheDocument>,
-    private readonly roiService: RoiService,
+
+    protected readonly roiService: RoiService,
   ) {}
 
   async getData(filter: Filter) {
@@ -39,11 +46,11 @@ export class AppService {
       filter,
     });
 
-    if (cacheData) {
+    /*if (cacheData) {
       return cacheData.data;
-    }
+    }*/
 
-    const data = await this.blockModel.aggregate([
+    let data = await this.blockModel.aggregate([
       {
         $lookup: {
           from: 'listings',
@@ -80,37 +87,62 @@ export class AppService {
         },
       },
     ]);
-    const mappedData = data.map((i) => {
-      //get property cost by city here
-      const averagePropertyCost = 400000;
-      const completeMortgageData = {
-        propertyCost: averagePropertyCost,
-        ...mortgageData,
-      };
 
-      const isValidMortgageData =
-        this.roiService.isValidMortgageData(completeMortgageData);
-      i.cashFlow = this.roiService.calculateCashFlow(
-        i.sum,
-        isValidMortgageData ? completeMortgageData : undefined,
-      );
-      i.capRate = this.roiService.calculateCapRate(i.sum, averagePropertyCost);
-      i.cashOnCash = isValidMortgageData
-        ? this.roiService.calculateCashOnCashReturn(i.sum, completeMortgageData)
-        : undefined;
+    if (filter.country === 'United States' && filter.groupBy === 'city') {
+      const properties = (
+        await this.blockModel.aggregate([
+          {
+            $group: {
+              _id: 'city',
+              count: { $count: {} },
+              sum: { $sum: '$price' },
+            },
+          },
+        ])
+      ).reduce((map, row) => {
+        return map.set(row._id, Math.round(row.sum / row.count));
+      }, new Map());
 
-      const { totalListings, ...rest } = i;
+      data = data.map((i) => {
+        //get property cost by city here
+        const averagePropertyCost = properties.get(i._id) || 400000;
+        const completeMortgageData = {
+          propertyCost: averagePropertyCost,
+          ...mortgageData,
+        };
 
-      return rest;
-    });
+        const isValidMortgageData =
+          this.roiService.isValidMortgageData(completeMortgageData);
+        i.cashFlow = this.roiService.calculateCashFlow(
+          i.sum,
+          isValidMortgageData ? completeMortgageData : undefined,
+        );
+        i.capRate = this.roiService.calculateCapRate(
+          i.sum,
+          averagePropertyCost,
+        );
+        i.cashOnCash = isValidMortgageData
+          ? this.roiService.calculateCashOnCashReturn(
+              i.sum,
+              completeMortgageData,
+            )
+          : undefined;
+
+        return i;
+      });
+    }
+
+    const filteredData = data
+      .filter((item) => item._id !== null)
+      .map(({ totalListings, ...rest }) => rest);
 
     await this.cacheModel.create({
       _id: new mongoose.Types.ObjectId(),
       type: 'bookingsByFilter',
       filter,
-      data: mappedData,
+      data: filteredData,
     });
 
-    return mappedData.filter((item) => item._id !== null);
+    return filteredData;
   }
 }
