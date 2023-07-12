@@ -5,10 +5,15 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Block, BlockSchema } from './schema/block.schema';
 import { Listing, ListingSchema } from './schema/listing.schema';
+import {
+  PropertiesData,
+  PropertiesDataSchema,
+} from './schema/properties-data.schema';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import { Cache, CacheSchema } from './schema/cache.schema';
 import { RoiService } from './roi.service';
+import { CsvimportTask } from './cmd/csvimport.task';
 
 @Module({
   imports: [
@@ -22,9 +27,10 @@ import { RoiService } from './roi.service';
       { name: Block.name, schema: BlockSchema },
       { name: Listing.name, schema: ListingSchema },
       { name: Cache.name, schema: CacheSchema },
+      { name: PropertiesData.name, schema: PropertiesDataSchema },
     ]),
   ],
   controllers: [AppController],
-  providers: [AppService, RoiService],
+  providers: [AppService, RoiService, CsvimportTask],
 })
 export class AppModule {}
