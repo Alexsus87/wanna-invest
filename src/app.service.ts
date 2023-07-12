@@ -13,7 +13,30 @@ export class AppService {
     protected readonly blockModel: Model<BlockDocument>,
   ) {}
 
-  getData(): string[] {
-    return ['hello'];
+  async getData() {
+    const data = await this.blockModel
+      .aggregate([
+        {
+          $lookup: {
+            from: 'listings',
+            localField: 'listingId',
+            foreignField: '_id',
+            as: 'listings',
+          },
+        },
+        {
+          $unwind: '$listings',
+        },
+        {
+          $group: {
+            _id: {
+              city: '$listings.address.city',
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .exec();
+    return data;
   }
 }
