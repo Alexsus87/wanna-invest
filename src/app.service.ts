@@ -4,6 +4,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Block, BlockDocument } from './schema/block.schema';
 import { Listing, ListingDocument } from './schema/listing.schema';
 import { Cache, CacheDocument } from './schema/cache.schema';
+import {
+  PropertiesData,
+  PropertiesDataDocument,
+} from './schema/properties-data.schema';
+import { RoiService } from './roi.service';
 
 export interface Filter {
   year?: number;
@@ -18,8 +23,12 @@ export class AppService {
     protected readonly listingModel: Model<ListingDocument>,
     @InjectModel(Block.name)
     protected readonly blockModel: Model<BlockDocument>,
+    @InjectModel(PropertiesData.name)
+    protected readonly propertyModel: Model<PropertiesDataDocument>,
     @InjectModel(Cache.name)
     protected readonly cacheModel: Model<CacheDocument>,
+
+    protected readonly roiService: RoiService,
   ) {}
 
   async getData(filter: Filter) {
@@ -28,11 +37,11 @@ export class AppService {
       filter,
     });
 
-    if (cacheData) {
+    /*if (cacheData) {
       return cacheData.data;
-    }
+    }*/
 
-    const data = await this.blockModel.aggregate([
+    let data = await this.blockModel.aggregate([
       {
         $lookup: {
           from: 'listings',
@@ -63,6 +72,44 @@ export class AppService {
         },
       },
     ]);
+
+    if (filter.country === 'United States' && filter.groupBy === 'city') {
+      const properties = (
+        await this.blockModel.aggregate([
+          {
+            $group: {
+              _id: 'city',
+              count: { $count: {} },
+              sum: { $sum: '$price' },
+            },
+          },
+        ])
+      ).reduce((map, row) => {
+        return map.set(row._id, Math.round(row.sum / row.count));
+      }, new Map());
+
+      data = data.map((row) => {
+        const averagePropertyPriceForCity = properties.get(row._id);
+
+        if (averagePropertyPriceForCity) {
+          row.capRate = this.roiService.calculateCapRate(
+            row.sum,
+            averagePropertyPriceForCity,
+          );
+          row.cashOnCash = this.roiService.cashOnCashReturn(
+            row.sum,
+            averagePropertyPriceForCity,
+          );
+          row.cashFlow = this.roiService.calculateCashFlow(
+            row.sum,
+            averagePropertyPriceForCity,
+          );
+          row.payback = averagePropertyPriceForCity / row.sum;
+        }
+
+        return row;
+      });
+    }
 
     await this.cacheModel.create({
       _id: new mongoose.Types.ObjectId(),
