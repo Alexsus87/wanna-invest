@@ -78,7 +78,7 @@ export class AppService {
           lng: { $first: '$listings.address.lng' },
           count: { $sum: 1 },
           sum: { $sum: '$reservation.money.hostPayout' },
-          totalListings: { $addToSet: '$listings._id' }, // Collect unique listing IDs
+          totalListings: { $addToSet: '$listingId' }, // Collect unique listing IDs
         },
       },
       {
@@ -111,19 +111,20 @@ export class AppService {
           ...mortgageData,
         };
 
+        const avgSum = i.sum / i.totalListingsCount;
         const isValidMortgageData =
           this.roiService.isValidMortgageData(completeMortgageData);
         i.cashFlow = this.roiService.calculateCashFlow(
-          i.sum,
+          avgSum,
           isValidMortgageData ? completeMortgageData : undefined,
         );
         i.capRate = this.roiService.calculateCapRate(
-          i.sum,
+          avgSum,
           averagePropertyCost,
         );
         i.cashOnCash = isValidMortgageData
           ? this.roiService.calculateCashOnCashReturn(
-              i.sum,
+              avgSum,
               completeMortgageData,
             )
           : undefined;
