@@ -8,7 +8,7 @@ import { BlockSchema } from '../schema/block.schema';
 export class MongoImportBlockTask {
   async run() {
     const prodConnection = await mongoose.createConnection(
-      'mongodb://bohdan_onyshchenko:rXXgv2XEvqrt@dynamic-pricing-shard-00-00.jqmo9.mongodb.net:27017,dynamic-pricing-shard-00-01.jqmo9.mongodb.net:27017,dynamic-pricing-shard-00-02.jqmo9.mongodb.net:27017/dpt-data?ssl=true&replicaSet=atlas-rpqfls-shard-0',
+      process.env.MONGO_CONNECTION_STRING_PROD,
       {
         authSource: 'admin',
       },
@@ -17,7 +17,11 @@ export class MongoImportBlockTask {
       process.env.MONGO_CONNECTION_STRING,
     );
 
-    const prodBlocksModel = prodConnection.model('blocks', BlockSchema);
+    const prodBlocksModel = prodConnection.model(
+      'blocks',
+      BlockSchema,
+      'blocks',
+    );
     const devBlocksModel = devConnection.model(
       'blocks_v2',
       BlockSchema,
