@@ -128,7 +128,7 @@ export class AppService {
               completeMortgageData,
             )
           : undefined;
-
+        i.averagePropertyCost = averagePropertyCost;
         return i;
       });
     }
