@@ -12,17 +12,23 @@ export class RoiService {
       ? this.calculateMortgagePayments(mortgage)
       : 0;
 
-    return annualCashFlow - maintenanceExpenses - mortgageExpenses;
+    const cashFlow = annualCashFlow - maintenanceExpenses - mortgageExpenses;
+    return this.trimNumber(cashFlow);
   }
 
-  calculateCashOnCashReturn(annualCashFlow: number, mortgage: MortgageData) {
+  calculateCashOnCashReturn(
+    annualCashFlow: number,
+    mortgage: MortgageData,
+  ): number {
     const annualNetCashFlow = this.calculateCashFlow(annualCashFlow, mortgage);
-    return (annualNetCashFlow / mortgage.downPayment) * 100;
+    const cashOnCash = (annualNetCashFlow / mortgage.downPayment) * 100;
+    return this.trimNumber(cashOnCash);
   }
 
   calculateCapRate(annualCashFlow: number, purchasePrice: number): number {
     const annualNetCashFlow = this.calculateCashFlow(annualCashFlow);
-    return (annualNetCashFlow / purchasePrice) * 100;
+    const capRate = (annualNetCashFlow / purchasePrice) * 100;
+    return this.trimNumber(capRate);
   }
 
   calculateYearlyMortgage(
@@ -71,5 +77,9 @@ export class RoiService {
       !!data.propertyCost &&
       !!data.years
     );
+  }
+
+  private trimNumber(val: number): number {
+    return +val.toFixed(2);
   }
 }
