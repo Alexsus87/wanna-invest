@@ -18,7 +18,7 @@ class Reservation {
 const ReservationSchema = SchemaFactory.createForClass(Reservation);
 
 @Schema({
-  collection: 'blocks_v3',
+  collection: 'blocks_v2',
   autoIndex: true,
 })
 export class Block {

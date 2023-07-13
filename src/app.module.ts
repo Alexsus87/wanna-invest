@@ -18,6 +18,7 @@ import { MongoImportTask } from './cmd/mongo-import.task';
 import { MongoImportBlockTask } from './cmd/mongo-import-block.task';
 import { State, StateSchema } from './schema/state.schema';
 import { MergeDataTask } from './cmd/merge-data.task';
+import { BlockSchemaV3, BlockV3 } from './schema/block-v3.schema';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MergeDataTask } from './cmd/merge-data.task';
     MongooseModule.forRoot(process.env.MONGO_CONNECTION_STRING),
     MongooseModule.forFeature([
       { name: Block.name, schema: BlockSchema },
+      { name: BlockV3.name, schema: BlockSchemaV3 },
       { name: Listing.name, schema: ListingSchema },
       { name: Cache.name, schema: CacheSchema },
       { name: PropertiesData.name, schema: PropertiesDataSchema },

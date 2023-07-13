@@ -10,6 +10,7 @@ import {
 } from './schema/properties-data.schema';
 import { RoiService } from './roi.service';
 import { State, StateDocument } from './schema/state.schema';
+import { BlockDocumentV3, BlockV3 } from './schema/block-v3.schema';
 
 export interface Filter {
   year?: number;
@@ -25,8 +26,8 @@ export class AppService {
   constructor(
     @InjectModel(Listing.name)
     protected readonly listingModel: Model<ListingDocument>,
-    @InjectModel(Block.name)
-    protected readonly blockModel: Model<BlockDocument>,
+    @InjectModel(BlockV3.name)
+    protected readonly blockModel: Model<BlockDocumentV3>,
     @InjectModel(PropertiesData.name)
     protected readonly propertyModel: Model<PropertiesDataDocument>,
     @InjectModel(State.name)
