@@ -55,20 +55,9 @@ export class AppService {
 
     let data = await this.blockModel.aggregate([
       {
-        $lookup: {
-          from: 'listings',
-          localField: 'listingId',
-          foreignField: '_id',
-          as: 'listings',
-        },
-      },
-      {
-        $unwind: '$listings',
-      },
-      {
         $match: {
           ...(filter.country
-            ? { 'listings.address.country': filter.country }
+            ? { 'listing.address.country': filter.country }
             : {}),
           startDate: { $gte: new Date(filter.year, 0, 1) },
           endDate: { $lte: new Date(filter.year, 11, 31) },
@@ -76,20 +65,14 @@ export class AppService {
       },
       {
         $group: {
-          _id: `$listings.address.${filter.groupBy}`,
-          country: { $first: '$listings.address.country' },
-          city: { $first: '$listings.address.city' },
-          state: { $first: '$listings.address.state' },
-          lat: { $first: '$listings.address.lat' },
-          lng: { $first: '$listings.address.lng' },
+          _id: `$listing.address.${filter.groupBy}`,
+          country: { $first: '$listing.address.country' },
+          city: { $first: '$listing.address.city' },
+          state: { $first: '$listing.address.state' },
+          lat: { $first: '$listing.address.lat' },
+          lng: { $first: '$listing.address.lng' },
           count: { $sum: 1 },
           sum: { $sum: '$reservation.money.hostPayout' },
-          totalListings: { $addToSet: '$listingId' }, // Collect unique listing IDs
-        },
-      },
-      {
-        $addFields: {
-          totalListingsCount: { $size: '$totalListings' }, // Calculate count of unique listing IDs
         },
       },
     ]);
