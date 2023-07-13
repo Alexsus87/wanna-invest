@@ -74,6 +74,12 @@ export class AppService {
           lng: { $first: '$listing.address.lng' },
           count: { $sum: 1 },
           sum: { $sum: '$reservation.money.hostPayout' },
+          totalListings: { $addToSet: '$listingId' }, // Collect unique listing IDs
+        },
+      },
+      {
+        $addFields: {
+          totalListingsCount: { $size: '$totalListings' }, // Calculate count of unique listing IDs
         },
       },
     ]);
@@ -103,6 +109,7 @@ export class AppService {
         //get property cost by city here
         const averagePropertyCost =
           propertiesMap.get(i._id) || statesMap.get(i.state) || 400000;
+
         const completeMortgageData = {
           propertyCost: averagePropertyCost,
           ...mortgageData,
