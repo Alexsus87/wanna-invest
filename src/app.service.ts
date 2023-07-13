@@ -142,6 +142,8 @@ export class AppService {
             )
           : undefined;
         i.averagePropertyCost = averagePropertyCost;
+        i.payback = +(averagePropertyCost / avgSum).toFixed(1);
+
         return i;
       });
     }
