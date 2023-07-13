@@ -17,6 +17,7 @@ import { CsvimportTask } from './cmd/csvimport.task';
 import { MongoImportTask } from './cmd/mongo-import.task';
 import { MongoImportBlockTask } from './cmd/mongo-import-block.task';
 import { State, StateSchema } from './schema/state.schema';
+import { MergeDataTask } from './cmd/merge-data.task';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { State, StateSchema } from './schema/state.schema';
     CsvimportTask,
     MongoImportTask,
     MongoImportBlockTask,
+    MergeDataTask,
   ],
 })
 export class AppModule {}

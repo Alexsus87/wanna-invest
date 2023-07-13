@@ -42,4 +42,5 @@ src/cmd/offset-blocks.txt
 src/cmd/offset-blocks.json
 src/cmd/offset-listings.json
 src/cmd/offset.txt
+src/cmd/offset-merge.json
 src/cmd/realtor-data.json
