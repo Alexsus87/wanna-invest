@@ -126,7 +126,8 @@ export class AppService {
             )
           : undefined;
         i.averagePropertyCost = averagePropertyCost;
-        i.payback = +(averagePropertyCost / avgSum).toFixed(1);
+        i.paybackCoc = +(100 / i.cashOnCash).toFixed(1);
+        i.paybackCr = +(100 / i.capRate).toFixed(1);
 
         return i;
       });
