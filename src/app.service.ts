@@ -9,6 +9,7 @@ import {
   PropertiesDataDocument,
 } from './schema/properties-data.schema';
 import { RoiService } from './roi.service';
+import { State, StateDocument } from './schema/state.schema';
 
 export interface Filter {
   year?: number;
@@ -28,6 +29,8 @@ export class AppService {
     protected readonly blockModel: Model<BlockDocument>,
     @InjectModel(PropertiesData.name)
     protected readonly propertyModel: Model<PropertiesDataDocument>,
+    @InjectModel(State.name)
+    protected readonly stateModel: Model<StateDocument>,
     @InjectModel(Cache.name)
     protected readonly cacheModel: Model<CacheDocument>,
 
@@ -46,9 +49,9 @@ export class AppService {
       filter,
     });
 
-    if (cacheData) {
+    /*if (cacheData) {
       return cacheData.data;
-    }
+    }*/
 
     let data = await this.blockModel.aggregate([
       {
@@ -74,6 +77,9 @@ export class AppService {
       {
         $group: {
           _id: `$listings.address.${filter.groupBy}`,
+          country: { $first: '$listings.address.country' },
+          city: { $first: '$listings.address.city' },
+          state: { $first: '$listings.address.state' },
           lat: { $first: '$listings.address.lat' },
           lng: { $first: '$listings.address.lng' },
           count: { $sum: 1 },
@@ -89,8 +95,8 @@ export class AppService {
     ]);
 
     if (filter.country === 'United States' && filter.groupBy === 'city') {
-      const properties = (
-        await this.blockModel.aggregate([
+      const [properties, states] = await Promise.all([
+        this.propertyModel.aggregate([
           {
             $group: {
               _id: 'city',
@@ -98,14 +104,21 @@ export class AppService {
               sum: { $sum: '$price' },
             },
           },
-        ])
-      ).reduce((map, row) => {
+        ]),
+        this.stateModel.find(),
+      ]);
+      const propertiesMap = properties.reduce((map, row) => {
         return map.set(row._id, Math.round(row.sum / row.count));
       }, new Map());
+      const statesMap = states.reduce((map, row) => {
+        return map.set(row.state, row.price);
+      }, new Map());
+      console.log(statesMap);
 
       data = data.map((i) => {
         //get property cost by city here
-        const averagePropertyCost = properties.get(i._id) || 400000;
+        const averagePropertyCost =
+          propertiesMap.get(i._id) || statesMap.get(i.state) || 400000;
         const completeMortgageData = {
           propertyCost: averagePropertyCost,
           ...mortgageData,

@@ -16,6 +16,7 @@ import { RoiService } from './roi.service';
 import { CsvimportTask } from './cmd/csvimport.task';
 import { MongoImportTask } from './cmd/mongo-import.task';
 import { MongoImportBlockTask } from './cmd/mongo-import-block.task';
+import { State, StateSchema } from './schema/state.schema';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { MongoImportBlockTask } from './cmd/mongo-import-block.task';
       { name: Listing.name, schema: ListingSchema },
       { name: Cache.name, schema: CacheSchema },
       { name: PropertiesData.name, schema: PropertiesDataSchema },
+      { name: State.name, schema: StateSchema },
     ]),
   ],
   controllers: [AppController],
