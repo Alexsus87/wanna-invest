@@ -80,6 +80,6 @@ export class RoiService {
   }
 
   private trimNumber(val: number): number {
-    return +val.toFixed(2);
+    return +(val || 0).toFixed(2);
   }
 }
